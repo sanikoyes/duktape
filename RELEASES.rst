@@ -2420,6 +2420,10 @@ Planned
 * Minor improvements to heap object queue handling code: improve pointer
   compression performance a little, more assertion coverage (GH-1323)
 
+* Add support for mapping Ecmascript function 'data' area into a user
+  provided external buffer on-the-fly which is useful on some low memory
+  targets (GH-FIXME)
+
 * Fix a duk_push_heapptr() finalize_list assertion issue caused by the
   internal heap->finalize_list being (intentionally) out-of-sync during
   mark-and-sweep finalizer execution; this has no functional impact but
