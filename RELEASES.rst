@@ -2430,7 +2430,7 @@ Planned
   functions (GH-1297)
 
 * Miscellaneous performance improvements: more likely/unlike attributes and
-  hot/cold function splits (GH-1308, GH-1309)
+  hot/cold function splits (GH-1308, GH-1309, GH-1312)
 
 * Internal change: duk_hstring now has a 'next' heap pointer for string table
   chaining; this affects string allocation sizes which may matter for manually
