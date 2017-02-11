@@ -14,7 +14,7 @@
  *  Misc
  */
 
-DUK_LOCAL void duk__queue_refzero(duk_heap *heap, duk_heaphdr *hdr) {
+DUK_LOCAL DUK_INLINE void duk__queue_refzero(duk_hthread *thr, duk_heap *heap, duk_heaphdr *hdr, duk_bool_t skip_free_pending) {
 	/* Tail insert: don't disturb head in case refzero is running. */
 
 	if (heap->refzero_list != NULL) {
@@ -30,6 +30,10 @@ DUK_LOCAL void duk__queue_refzero(duk_heap *heap, duk_heaphdr *hdr) {
 		DUK_ASSERT_HEAPHDR_LINKS(heap, hdr);
 		DUK_ASSERT_HEAPHDR_LINKS(heap, hdr_prev);
 		heap->refzero_list_tail = hdr;
+
+		/* Free-pending already running (or NORZ macros prevented it
+		 * from starting), no check.
+		 */
 	} else {
 		DUK_ASSERT(heap->refzero_list_tail == NULL);
 		DUK_HEAPHDR_SET_NEXT(heap, hdr, NULL);
@@ -37,7 +41,23 @@ DUK_LOCAL void duk__queue_refzero(duk_heap *heap, duk_heaphdr *hdr) {
 		DUK_ASSERT_HEAPHDR_LINKS(heap, hdr);
 		heap->refzero_list = hdr;
 		heap->refzero_list_tail = hdr;
+
+		if (skip_free_pending) {
+			/* NORZ macro used, do nothing. */
+		} else {
+			duk_refzero_free_pending(thr);
+		}
 	}
+
+	/* NOTE: the problem with doing a free-pending check only when the
+	 * queue is initially empty is that a single NORZ call without a
+	 * forced DUK_REFZERO_CHECK() leaves the refzero_list unprocessed
+	 * until another DUK_REFZERO_CHECK() or heap destruction occurs.
+	 *
+	 * This may be controlled enough by the DUK_REFZERO_CHECK() in error
+	 * handling paths and by making sure a DUK_REFZERO_CHECK() is always
+	 * in place after NORZ macro use.
+	 */
 }
 
 /*
@@ -495,10 +515,7 @@ DUK_INTERNAL void duk_refzero_free_pending(duk_hthread *thr) {
 	} while (0)
 #define DUK__RZ_OBJECT() do { \
 		duk_heap_remove_any_from_heap_allocated(heap, (duk_heaphdr *) h); \
-		duk__queue_refzero(heap, (duk_heaphdr *) h); \
-		if (!skip_free_pending) { \
-			duk_refzero_free_pending(thr); \
-		} \
+		duk__queue_refzero(thr, heap, (duk_heaphdr *) h, skip_free_pending); \
 	} while (0)
 #if defined(DUK_USE_FAST_REFCOUNT_DEFAULT)
 #define DUK__RZ_INLINE DUK_ALWAYS_INLINE
