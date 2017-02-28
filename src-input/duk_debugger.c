@@ -1004,13 +1004,13 @@ DUK_INTERNAL void duk_debug_send_status(duk_hthread *thr) {
 	duk_debug_write_int(thr, (DUK_HEAP_HAS_DEBUGGER_PAUSED(thr->heap) ? 1 : 0));
 
 	DUK_ASSERT_DISABLE(thr->callstack_top >= 0);  /* unsigned */
-	if (thr->callstack_top == 0) {
+	act = thr->callstack_curr;
+	if (act == NULL) {
 		duk_debug_write_undefined(thr);
 		duk_debug_write_undefined(thr);
 		duk_debug_write_int(thr, 0);
 		duk_debug_write_int(thr, 0);
 	} else {
-		act = thr->callstack + thr->callstack_top - 1;
 		duk_push_tval(ctx, &act->tv_func);
 		duk_get_prop_string(ctx, -1, "fileName");
 		duk__debug_write_hstring_safe_top(thr);
@@ -1055,12 +1055,15 @@ DUK_INTERNAL void duk_debug_send_throw(duk_hthread *thr, duk_bool_t fatal) {
 		/* For anything other than an Error instance, we calculate the error
 		 * location directly from the current activation.
 		 */
-		act = thr->callstack + thr->callstack_top - 1;
-		duk_push_tval(ctx, &act->tv_func);
-		duk_get_prop_string(ctx, -1, "fileName");
-		duk__debug_write_hstring_safe_top(thr);
-		pc = duk_hthread_get_act_prev_pc(thr, act);
-		duk_debug_write_uint(thr, (duk_uint32_t) duk_hobject_pc2line_query(ctx, -2, pc));
+		act = thr->callstack_curr;
+		if (act != NULL) {
+			duk_push_tval(ctx, &act->tv_func);
+			duk_get_prop_string(ctx, -1, "fileName");
+			duk__debug_write_hstring_safe_top(thr);
+			pc = duk_hthread_get_act_prev_pc(thr, act);
+			duk_debug_write_uint(thr, (duk_uint32_t) duk_hobject_pc2line_query(ctx, -2, pc));
+		}
+		/* FIXME */
 	}
 	duk_pop_2(ctx);  /* shared pop */
 

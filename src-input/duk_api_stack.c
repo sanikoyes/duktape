@@ -3718,6 +3718,7 @@ DUK_LOCAL void duk__push_this_helper(duk_context *ctx, duk_small_uint_t check_ob
 	DUK_ASSERT(DUK_TVAL_IS_UNDEFINED(thr->valstack_top));  /* because of valstack init policy */
 	tv_slot = thr->valstack_top++;
 
+	/* FIXME: callstack_curr? */
 	if (DUK_UNLIKELY(thr->callstack_top == 0)) {
 		if (check_object_coercible) {
 			goto type_error;
@@ -3781,6 +3782,7 @@ DUK_INTERNAL duk_tval *duk_get_borrowed_this_tval(duk_context *ctx) {
 	thr = (duk_hthread *) ctx;
 
 	DUK_ASSERT(thr->callstack_top > 0);  /* caller required to know */
+	DUK_ASSERT(thr->callstack_curr != NULL);
 	DUK_ASSERT(thr->valstack_bottom > thr->valstack);  /* consequence of above */
 	DUK_ASSERT(thr->valstack_bottom - 1 >= thr->valstack);  /* 'this' binding exists */
 
@@ -3797,7 +3799,7 @@ DUK_EXTERNAL void duk_push_current_function(duk_context *ctx) {
 	DUK_ASSERT(thr->callstack_top <= thr->callstack_size);
 
 	act = duk_hthread_get_current_activation(thr);
-	if (act) {
+	if (act != NULL) {
 		duk_push_tval(ctx, &act->tv_func);
 	} else {
 		duk_push_undefined(ctx);

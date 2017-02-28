@@ -134,8 +134,6 @@
 #endif
 #endif  /* DUK_USE_ROM_STRINGS */
 
-#define DUK_HTHREAD_GET_CURRENT_ACTIVATION(thr)  (&(thr)->callstack[(thr)->callstack_top - 1])
-
 /* values for the state field */
 #define DUK_HTHREAD_STATE_INACTIVE     1   /* thread not currently running */
 #define DUK_HTHREAD_STATE_RUNNING      2   /* thread currently running (only one at a time) */
@@ -317,6 +315,7 @@ struct duk_hthread {
 
 	/* Call stack.  [0,callstack_top[ is GC reachable. */
 	duk_activation *callstack;
+	duk_activation *callstack_curr;         /* current activation */
 	duk_size_t callstack_size;              /* allocation size */
 	duk_size_t callstack_top;               /* next to use, highest used is top - 1 */
 	duk_size_t callstack_preventcount;      /* number of activation records in callstack preventing a yield */
